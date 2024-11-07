@@ -15,7 +15,6 @@ const { swaggerUi, swaggerDocs } = require('./swagger');
 const app = express();
 
 if (cluster.isMaster) {
-  
     const numCPUs = os.cpus().length;
     console.log(`Master process is running with PID: ${process.pid}`);
     console.log(`Forking ${numCPUs} workers...`);
@@ -24,23 +23,28 @@ if (cluster.isMaster) {
         cluster.fork(); 
     }
 
-    
     cluster.on('exit', (worker, code, signal) => {
         console.log(`Worker ${worker.process.pid} died. Forking a new worker...`);
         cluster.fork();
     });
-
 } else {
-    
-    
-
     mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
         .then(() => console.log('MongoDB connected'))
         .catch(err => console.log(err));
 
+    const allowedOrigins = [
+        process.env.ALLOWED_ORIGIN_DEV, // Local development
+        process.env.ALLOWED_ORIGIN_PROD, // Deployed frontend
+    ];
+
     app.use(cors({
-        origin: 'http://localhost:3000',
-        credentials: true,
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            return callback(new Error('CORS policy error'), false);
+        },
+        credentials: true, // Enable credentials (cookies, authorization tokens)
     }));
 
     app.use((req, res, next) => {
@@ -71,18 +75,7 @@ if (cluster.isMaster) {
     const holidayRoutes = require('./routes/holidayRoutes');
     app.use('/api', holidayRoutes);
 
-    app.use((req, res, next) => {
-        console.log(`Request URL: ${req.originalUrl}`);
-        next();
-    });
-
-
-app.use('/api/bookings', bookingRoutes);
-
-
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
