@@ -33,19 +33,20 @@ if (cluster.isMaster) {
         .catch(err => console.log(err));
 
     const allowedOrigins = [
-        process.env.ALLOWED_ORIGIN_DEV, // Local development
-        process.env.ALLOWED_ORIGIN_PROD, // Deployed frontend
-    ];
+    'http://localhost:3000', // Local development
+    'https://seat-booking-system-ten-yjhj-6rk61h4u6-jtdsiriwardenas-projects.vercel.app', // Deployed frontend
+];
 
-    app.use(cors({
-        origin: (origin, callback) => {
-            if (!origin || allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-            return callback(new Error('CORS policy error'), false);
-        },
-        credentials: true, // Enable credentials (cookies, authorization tokens)
-    }));
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('CORS policy error'), false);
+    },
+    credentials: true,
+}));
+
 
     app.use((req, res, next) => {
         res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
